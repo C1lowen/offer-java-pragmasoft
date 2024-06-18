@@ -6,8 +6,7 @@ import com.offer.java.offer.exception.NotFoundException;
 import com.offer.java.offer.exception.ScriptRunException;
 import com.offer.java.offer.mapper.MapperScript;
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.PolyglotException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -28,8 +27,7 @@ public class ScriptExecutionService {
 
     private static final String MESSAGE_SCRIPT_NOT_FOUND = "Script with this id - %s not found";
     private static final String MESSAGE_SCRIPT_RUNNING = "The script is currently running and cannot be deleted";
-    private static final String MESSAGE_SCRIPT_RETURN_ID = "Script is being executed asynchronously with ID: ";
-    private static final String MESSAGE_SCRIPT_NOT_RUNNING = "Script with ID %s is not running or already completed";
+    private static final String MESSAGE_SCRIPT_NOT_RUNNING = "Script with is not running";
 
     public ScriptResult executeScript(String script, boolean isBlocking) {
         String scriptId = UUID.randomUUID().toString();
@@ -50,13 +48,15 @@ public class ScriptExecutionService {
         } else {
             Future<?> future = executor.submit(task);
             scriptInfo.setFuture(future);
-            return new ScriptResult(MESSAGE_SCRIPT_RETURN_ID + scriptId);
+            return new ScriptResult(scriptId);
         }
     }
 
 
     private Callable<ScriptResult> createScriptTask(String script, ScriptInfo scriptInfo) {
         return () -> {
+            scriptInfo.getResult().setStatus(PROCESSING);
+
             ScriptResult result = new ScriptResult();
             ByteArrayOutputStream outContent = new ByteArrayOutputStream();
             ByteArrayOutputStream errContent = new ByteArrayOutputStream();
@@ -75,8 +75,8 @@ public class ScriptExecutionService {
                 result.setError(errContent.toString());
                 result.setStatus(COMPLETED);
 
-            } catch (Exception e) {
-                if(e.getMessage().equals("Thread was interrupted.")) {
+            } catch (PolyglotException e) {
+                if(e.isInterrupted()) {
                     result.setError(e.getMessage());
                     result.setStatus(STOPPED);
                 }else {
@@ -84,8 +84,8 @@ public class ScriptExecutionService {
                     result.setStatus(ERROR);
                 }
             }
-
-            scriptInfo.setResult(result);
+            result.setId(scriptInfo.getId());
+            scriptInfo.setResult(MapperScript.mapToScriptResultDTO(result));
             scriptInfo.setDuration(System.currentTimeMillis() - scriptInfo.getStartTime());
 
             return result;
@@ -131,10 +131,14 @@ public class ScriptExecutionService {
         }
 
         Future<?> future = scriptInfo.getFuture();
-        if (future != null) {
-            future.cancel(true);
-        } else {
-            throw new IllegalStateException(String.format(MESSAGE_SCRIPT_NOT_RUNNING, scriptId));
+        if(scriptInfo.getResult().getStatus() == PROCESSING) {
+            if (future != null) {
+                future.cancel(true);
+            } else {
+                throw new IllegalStateException(MESSAGE_SCRIPT_NOT_RUNNING);
+            }
+        }else {
+            throw new ApplicationException(MESSAGE_SCRIPT_NOT_RUNNING, HttpStatus.CONFLICT);
         }
     }
 

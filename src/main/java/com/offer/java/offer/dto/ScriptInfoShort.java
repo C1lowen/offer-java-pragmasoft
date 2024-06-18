@@ -6,6 +6,6 @@ import lombok.Data;
 public class ScriptInfoShort {
     private String id;
     private String script;
-    private ScriptResult result;
+    private ScriptResultDTO result;
     private long duration;
 }

@@ -1,8 +1,6 @@
 package com.offer.java.offer.mapper;
 
-import com.offer.java.offer.dto.ScriptInfo;
-import com.offer.java.offer.dto.ScriptInfoResponse;
-import com.offer.java.offer.dto.ScriptInfoShort;
+import com.offer.java.offer.dto.*;
 import org.modelmapper.ModelMapper;
 
 
@@ -16,6 +14,10 @@ public class MapperScript {
 
     public static ScriptInfoResponse mapToResponseScript(ScriptInfo script) {
         return mapper.map(script, ScriptInfoResponse.class);
+    }
+
+    public static ScriptResultDTO mapToScriptResultDTO(ScriptResult script) {
+        return mapper.map(script, ScriptResultDTO.class);
     }
 
 }

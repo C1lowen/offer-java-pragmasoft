@@ -1,11 +1,8 @@
 package com.offer.java.offer.controller;
 
 import com.offer.java.offer.dto.*;
-import com.offer.java.offer.exception.ApplicationException;
 import com.offer.java.offer.service.ScriptExecutionService;
 import lombok.AllArgsConstructor;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,8 +18,6 @@ public class ScriptController {
     private final static String MESSAGE_STOPPED_SCRIPT = "Script stopped";
 
     private final static String MESSAGE_DELETE_SCRIPT = "Script deleted";
-
-    private final static String MESSAGE_BAD_REQUEST = "The server did not understand your request, something is wrong";
 
     //Evaluate arbitrary JavaScript code
     @PostMapping("/execute")
