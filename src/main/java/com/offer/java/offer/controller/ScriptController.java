@@ -22,7 +22,6 @@ public class ScriptController {
     //Evaluate arbitrary JavaScript code
     @PostMapping("/execute")
     public ScriptResult executeScript(@RequestBody String script, @RequestParam boolean blocking) {
-
         return scriptExecutionService.executeScript(script, blocking);
     }
 
@@ -48,13 +47,13 @@ public class ScriptController {
     @DeleteMapping("/{id}/stop")
     public ResponseEntity<ScriptResponse> stopScript(@PathVariable String id) {
         scriptExecutionService.stopScript(id);
-        return ResponseEntity.ok(ScriptResponse.builder().answer(MESSAGE_STOPPED_SCRIPT).build());
+        return ResponseEntity.ok(ScriptResponse.builder().message(MESSAGE_STOPPED_SCRIPT).statusOperation(StatusOperation.OK).id(id).build());
     }
 
     //Remove inactive scripts
     @DeleteMapping("/{id}")
     public ResponseEntity<ScriptResponse> removeScript(@PathVariable String id) {
         scriptExecutionService.deleteScript(id);
-        return ResponseEntity.ok(ScriptResponse.builder().answer(MESSAGE_DELETE_SCRIPT).build());
+        return ResponseEntity.ok(ScriptResponse.builder().message(MESSAGE_DELETE_SCRIPT).statusOperation(StatusOperation.OK).id(id).build());
     }
 }

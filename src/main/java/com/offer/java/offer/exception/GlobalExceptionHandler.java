@@ -12,7 +12,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApplicationException.class)
     public ResponseEntity<?> handlePaymentException(ApplicationException ex) {
-        return new ResponseEntity<>(ErrorResponse.builder().errorMessage(ex.getMessage()).build(), ex.getHttpStatus());
+        return new ResponseEntity<>(ex.getScriptResponse(), ex.getHttpStatus());
     }
 
 }

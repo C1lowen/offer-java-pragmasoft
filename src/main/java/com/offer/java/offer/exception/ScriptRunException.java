@@ -1,10 +1,11 @@
 package com.offer.java.offer.exception;
 
+import com.offer.java.offer.dto.ScriptResponse;
 import org.springframework.http.HttpStatus;
 
 public class ScriptRunException extends ApplicationException {
 
-    public ScriptRunException(String message) {
-        super(message, HttpStatus.BAD_REQUEST);
+    public ScriptRunException(ScriptResponse scriptResponse) {
+        super(HttpStatus.BAD_REQUEST, scriptResponse);
     }
 }

@@ -31,6 +31,10 @@ public class ScriptControllerTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    private final static String MESSAGE_STOPPED_SCRIPT = "Script stopped";
+
+    private final static String MESSAGE_DELETE_SCRIPT = "Script deleted";
+
     @Test
     public void testExecuteScript_blockingTrue_returnsScriptResult() throws Exception {
 
@@ -146,7 +150,7 @@ public class ScriptControllerTest {
         mockMvc.perform(get("/api/scripts/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is("id-test")));
+                .andExpect(jsonPath("$.id", is(id)));
     }
 
     @Test
@@ -156,7 +160,9 @@ public class ScriptControllerTest {
         mockMvc.perform(delete("/api/scripts/{id}/stop", id)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{'answer': 'Script stopped'}"));
+                .andExpect(jsonPath("$.id", is(id)))
+                .andExpect(jsonPath("$.statusOperation", is(StatusOperation.OK.toString())))
+                .andExpect(jsonPath("$.message", is(MESSAGE_STOPPED_SCRIPT)));
     }
 
     @Test
@@ -166,7 +172,9 @@ public class ScriptControllerTest {
         mockMvc.perform(delete("/api/scripts/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{'answer': 'Script deleted'}"));
+                .andExpect(jsonPath("$.id", is(id)))
+                .andExpect(jsonPath("$.statusOperation", is(StatusOperation.OK.toString())))
+                .andExpect(jsonPath("$.message", is(MESSAGE_DELETE_SCRIPT)));
     }
 
 }

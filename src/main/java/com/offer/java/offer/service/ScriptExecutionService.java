@@ -23,9 +23,10 @@ import static com.offer.java.offer.dto.Status.*;
 public class ScriptExecutionService {
 
     private final ConcurrentHashMap<String, ScriptInfo> scriptStorage = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ByteArrayOutputStream> outputStorage = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newFixedThreadPool(10);
 
-    private static final String MESSAGE_SCRIPT_NOT_FOUND = "Script with this id - %s not found";
+    private static final String MESSAGE_SCRIPT_NOT_FOUND = "Script with this id not found";
     private static final String MESSAGE_SCRIPT_RUNNING = "The script is currently running and cannot be deleted";
     private static final String MESSAGE_SCRIPT_NOT_RUNNING = "Script with is not running";
 
@@ -61,6 +62,8 @@ public class ScriptExecutionService {
             ByteArrayOutputStream outContent = new ByteArrayOutputStream();
             ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 
+            outputStorage.put(scriptInfo.getId(), outContent);
+
             try (PrintStream stdout = new PrintStream(outContent);
                  PrintStream stderr = new PrintStream(errContent);
                  Context context = Context.newBuilder("js")
@@ -68,6 +71,7 @@ public class ScriptExecutionService {
                          .err(stderr)
                          .option("engine.WarnInterpreterOnly", "false")
                          .build()) {
+
 
                 context.eval("js", script);
 
@@ -96,6 +100,10 @@ public class ScriptExecutionService {
 
         return scriptStorage.values().stream()
                 .map(MapperScript::mapToShortInfo)
+                .peek(scriptInfoShort ->  {
+                    ByteArrayOutputStream byteArrayOutputStream = outputStorage.get(scriptInfoShort.getId());
+                    scriptInfoShort.getResult().setOutput(byteArrayOutputStream.toString());
+                })
                 .filter(scriptInfoShort -> filterByStatus(scriptInfoShort, sortStatus))
                 .sorted(getComparator(sortTime))
                 .toList();
@@ -119,15 +127,27 @@ public class ScriptExecutionService {
     public ScriptInfoResponse getInfoScriptById(String id) {
         ScriptInfo scriptInfo = scriptStorage.get(id);
         if(scriptInfo == null) {
-            throw new NotFoundException(String.format(MESSAGE_SCRIPT_NOT_FOUND, id));
+            throw new NotFoundException(ScriptResponse.builder()
+                    .message(MESSAGE_SCRIPT_NOT_FOUND)
+                    .id(id)
+                    .statusOperation(StatusOperation.ERROR)
+                    .build());
         }
+
+        ByteArrayOutputStream byteArrayOutputStream = outputStorage.get(scriptInfo.getId());
+        scriptInfo.getResult().setOutput(byteArrayOutputStream.toString());
+
         return MapperScript.mapToResponseScript(scriptInfo);
     }
 
     public void stopScript(String scriptId) {
         ScriptInfo scriptInfo = scriptStorage.get(scriptId);
         if (scriptInfo == null) {
-            throw new NotFoundException(String.format(MESSAGE_SCRIPT_NOT_FOUND, scriptId));
+            throw new NotFoundException(ScriptResponse.builder()
+                    .message(MESSAGE_SCRIPT_NOT_FOUND)
+                    .id(scriptId)
+                    .statusOperation(StatusOperation.ERROR)
+                    .build());
         }
 
         Future<?> future = scriptInfo.getFuture();
@@ -135,17 +155,26 @@ public class ScriptExecutionService {
             if (future != null) {
                 future.cancel(true);
             } else {
-                throw new IllegalStateException(MESSAGE_SCRIPT_NOT_RUNNING);
+                throw new ApplicationException(HttpStatus.BAD_REQUEST, ScriptResponse.builder()
+                        .message(MESSAGE_SCRIPT_NOT_RUNNING)
+                        .id(scriptId)
+                        .statusOperation(StatusOperation.ERROR)
+                        .build());
             }
         }else {
-            throw new ApplicationException(MESSAGE_SCRIPT_NOT_RUNNING, HttpStatus.CONFLICT);
+            throw new ApplicationException(HttpStatus.CONFLICT,
+                    ScriptResponse.builder().message(MESSAGE_SCRIPT_NOT_RUNNING).id(scriptId).statusOperation(StatusOperation.ERROR).build());
         }
     }
 
     public void deleteScript(String id) {
         ScriptInfo scriptInfo = scriptStorage.get(id);
         if (scriptInfo == null) {
-            throw new NotFoundException(String.format(MESSAGE_SCRIPT_NOT_FOUND, id));
+            throw new NotFoundException(ScriptResponse.builder()
+                    .message(MESSAGE_SCRIPT_NOT_FOUND)
+                    .id(id)
+                    .statusOperation(StatusOperation.ERROR)
+                    .build());
         }
         if(scriptInfo.getResult() != null) {
             Status status = scriptInfo.getResult().getStatus();
@@ -153,7 +182,11 @@ public class ScriptExecutionService {
             if (status != PROCESSING) {
                 scriptStorage.remove(id);
             } else {
-                throw new ScriptRunException(MESSAGE_SCRIPT_RUNNING);
+                throw new ScriptRunException(ScriptResponse.builder()
+                        .message(MESSAGE_SCRIPT_RUNNING)
+                        .id(id)
+                        .statusOperation(StatusOperation.ERROR)
+                        .build());
             }
         }
     }

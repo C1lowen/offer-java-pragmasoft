@@ -6,5 +6,13 @@ import lombok.Data;
 @Data
 @Builder
 public class ScriptResponse {
-    private String answer;
+    private StatusOperation statusOperation;
+    private String message;
+    private String id;
+
+    public ScriptResponse(StatusOperation statusOperation, String message, String id) {
+        this.statusOperation = statusOperation;
+        this.message = message;
+        this.id = id;
+    }
 }

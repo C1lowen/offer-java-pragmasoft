@@ -1,10 +1,13 @@
 package com.offer.java.offer.exception;
 
+import com.offer.java.offer.dto.ScriptResponse;
 import org.springframework.http.HttpStatus;
 
 public class NotFoundException extends ApplicationException{
 
-    public NotFoundException(String message) {
-        super(message, HttpStatus.NOT_FOUND);
+
+
+    public NotFoundException( ScriptResponse scriptResponse) {
+        super( HttpStatus.NOT_FOUND, scriptResponse);
     }
 }

@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,15 +29,18 @@ public class ScriptExecutionServiceTest {
     private ScriptExecutionService scriptExecutionService;
 
     private ConcurrentHashMap<String, ScriptInfo> scriptStorage;
+    private ConcurrentHashMap<String, ByteArrayOutputStream> outputStorage;
 
-    private static final String MESSAGE_SCRIPT_NOT_FOUND = "Script with this id - %s not found";
+    private static final String MESSAGE_SCRIPT_NOT_FOUND = "Script with this id not found";
     private static final String MESSAGE_SCRIPT_RUNNING = "The script is currently running and cannot be deleted";
     private static final String MESSAGE_SCRIPT_NOT_RUNNING = "Script with is not running";
 
     @BeforeEach
     void setUp() {
+        outputStorage = new ConcurrentHashMap<>();
         scriptStorage = new ConcurrentHashMap<>();
         ReflectionTestUtils.setField(scriptExecutionService, "scriptStorage", scriptStorage);
+        ReflectionTestUtils.setField(scriptExecutionService, "outputStorage", outputStorage);
     }
 
 
@@ -105,18 +109,29 @@ public class ScriptExecutionServiceTest {
         ScriptInfo script2 = new ScriptInfo("2", "script2");
         ScriptInfo script3 = new ScriptInfo("3", "script3");
 
+        ByteArrayOutputStream byteArrayOutputStream1 = new ByteArrayOutputStream();
+        ByteArrayOutputStream byteArrayOutputStream2 = new ByteArrayOutputStream();
+        ByteArrayOutputStream byteArrayOutputStream3 = new ByteArrayOutputStream();
+
         ScriptInfoShort shortInfo1 = new ScriptInfoShort();
         shortInfo1.setScript("script1");
         shortInfo1.setId("1");
         shortInfo1.setResult(new ScriptResultDTO());
+        shortInfo1.getResult().setOutput(byteArrayOutputStream1.toString());
         ScriptInfoShort shortInfo2 = new ScriptInfoShort();
         shortInfo2.setScript("script2");
         shortInfo2.setId("2");
         shortInfo2.setResult(new ScriptResultDTO());
+        shortInfo2.getResult().setOutput(byteArrayOutputStream2.toString());
         ScriptInfoShort shortInfo3 = new ScriptInfoShort();
         shortInfo3.setScript("script3");
         shortInfo3.setId("3");
         shortInfo3.setResult(new ScriptResultDTO());
+        shortInfo3.getResult().setOutput(byteArrayOutputStream3.toString());
+
+        outputStorage.put("1", byteArrayOutputStream1);
+        outputStorage.put("2", byteArrayOutputStream2);
+        outputStorage.put("3", byteArrayOutputStream3);
 
         scriptStorage.put("1", script1);
         scriptStorage.put("2", script2);
@@ -136,6 +151,7 @@ public class ScriptExecutionServiceTest {
             ScriptInfoResponse expectedResponse = new ScriptInfoResponse();
 
             scriptStorage.put(scriptId, scriptInfo);
+            outputStorage.put("1", new ByteArrayOutputStream());
 
             mockedMapperScript.when(() -> MapperScript.mapToResponseScript(scriptInfo)).thenReturn(expectedResponse);
 
@@ -153,7 +169,9 @@ public class ScriptExecutionServiceTest {
             scriptExecutionService.getInfoScriptById(scriptId);
         });
 
-        assertEquals(String.format(MESSAGE_SCRIPT_NOT_FOUND, scriptId), thrown.getMessage());
+        ScriptResponse scriptResponse = new ScriptResponse(StatusOperation.ERROR, MESSAGE_SCRIPT_NOT_FOUND, scriptId);
+        assertEquals(scriptResponse, thrown.getScriptResponse());
+        assertEquals(HttpStatus.NOT_FOUND, thrown.getHttpStatus());
     }
 
 
@@ -164,8 +182,9 @@ public class ScriptExecutionServiceTest {
         NotFoundException thrown = assertThrows(NotFoundException.class, () -> {
             scriptExecutionService.stopScript(scriptId);
         });
-
-        assertEquals(String.format(MESSAGE_SCRIPT_NOT_FOUND, scriptId), thrown.getMessage());
+        ScriptResponse scriptResponse = new ScriptResponse(StatusOperation.ERROR, MESSAGE_SCRIPT_NOT_FOUND, scriptId);
+        assertEquals(scriptResponse, thrown.getScriptResponse());
+        assertEquals(HttpStatus.NOT_FOUND, thrown.getHttpStatus());
     }
 
     @Test
@@ -179,8 +198,8 @@ public class ScriptExecutionServiceTest {
         ApplicationException thrown = assertThrows(ApplicationException.class, () -> {
             scriptExecutionService.stopScript(scriptId);
         });
-
-        assertEquals(MESSAGE_SCRIPT_NOT_RUNNING, thrown.getMessage());
+        ScriptResponse scriptResponse = new ScriptResponse(StatusOperation.ERROR, MESSAGE_SCRIPT_NOT_RUNNING, scriptId);
+        assertEquals(scriptResponse, thrown.getScriptResponse());
         assertEquals(HttpStatus.CONFLICT, thrown.getHttpStatus());
     }
 
@@ -216,11 +235,13 @@ public class ScriptExecutionServiceTest {
 
         scriptStorage.put(scriptId, scriptInfo);
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> {
+        ApplicationException thrown = assertThrows(ApplicationException.class, () -> {
             scriptExecutionService.stopScript(scriptId);
         });
 
-        assertEquals(MESSAGE_SCRIPT_NOT_RUNNING, thrown.getMessage());
+        ScriptResponse scriptResponse = new ScriptResponse(StatusOperation.ERROR, MESSAGE_SCRIPT_NOT_RUNNING, scriptId);
+        assertEquals(scriptResponse, thrown.getScriptResponse());
+        assertEquals(HttpStatus.BAD_REQUEST, thrown.getHttpStatus());
     }
 
     @Test
@@ -231,7 +252,9 @@ public class ScriptExecutionServiceTest {
             scriptExecutionService.deleteScript(scriptId);
         });
 
-        assertEquals(String.format(MESSAGE_SCRIPT_NOT_FOUND, scriptId), thrown.getMessage());
+        ScriptResponse scriptResponse = new ScriptResponse(StatusOperation.ERROR, MESSAGE_SCRIPT_NOT_FOUND, scriptId);
+        assertEquals(scriptResponse, thrown.getScriptResponse());
+        assertEquals(HttpStatus.NOT_FOUND, thrown.getHttpStatus());
     }
 
     @Test
@@ -280,7 +303,9 @@ public class ScriptExecutionServiceTest {
             scriptExecutionService.deleteScript(scriptId);
         });
 
-        assertEquals(MESSAGE_SCRIPT_RUNNING, thrown.getMessage());
+        ScriptResponse scriptResponse = new ScriptResponse(StatusOperation.ERROR, MESSAGE_SCRIPT_RUNNING, scriptId);
+        assertEquals(scriptResponse, thrown.getScriptResponse());
+        assertEquals(HttpStatus.BAD_REQUEST, thrown.getHttpStatus());
     }
 
 
