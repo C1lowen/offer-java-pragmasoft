@@ -95,6 +95,17 @@
 </code>
 </pre>
 
+<p>Example answer exception JSON:</p>
+<pre>
+<code>
+{
+"statusOperation": "ERROR",
+"message": "Script with this id not found",
+"id": "a59f3aa3-6c8a-4433-847d-baf11e3f45f"
+}
+</code>
+</pre>
+
 <hr>
 
 <h6>DELETE - Remove inactive scripts</h6>
@@ -106,6 +117,17 @@
 "statusOperation": "OK",
 "message": "Script deleted",
 "id": "a59f3aa3-6c8a-4433-847d-baf11e3fe45f"
+}
+</code>
+</pre>
+
+<p>Example answer exception JSON:</p>
+<pre>
+<code>
+{
+"statusOperation": "ERROR",
+"message": "Script with this id not found",
+"id": "a59f3aa3-6c8a-4433-847d-baf11e3f45f"
 }
 </code>
 </pre>
