@@ -80,6 +80,18 @@
 </code>
 </pre>
 
+<p>Example answer exception JSON:</p>
+
+<pre>
+<code>
+{
+"statusOperation": "ERROR",
+"message": "Script with this id not found",
+"id": "a181272d-2917-4ffb-8c6-4697ddb80b45"
+}
+</code>
+</pre>
+
 <hr>
 
 <h6>DELETE - Forcibly stop any running or scheduled script</h6>
