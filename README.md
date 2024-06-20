@@ -88,7 +88,9 @@
 <pre>
 <code>
 {
-  "answer": "Script stopped"
+"statusOperation": "OK",
+"message": "Script stopped",
+"id": "a59f3aa3-6c8a-4433-847d-baf11e3fe45f"
 }
 </code>
 </pre>
@@ -101,7 +103,9 @@
 <pre>
 <code>
 {
-  "answer": "Script deleted"
+"statusOperation": "OK",
+"message": "Script deleted",
+"id": "a59f3aa3-6c8a-4433-847d-baf11e3fe45f"
 }
 </code>
 </pre>
