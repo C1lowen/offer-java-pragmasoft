@@ -181,6 +181,7 @@ public class ScriptExecutionService {
 
             if (status != PROCESSING) {
                 scriptStorage.remove(id);
+                outputStorage.remove(id);
             } else {
                 throw new ScriptRunException(ScriptResponse.builder()
                         .message(MESSAGE_SCRIPT_RUNNING)
